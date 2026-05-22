@@ -1,0 +1,20 @@
+import pydantic
+from typing import Dict
+from llama_index.core.schema import Node
+
+class RAGNodesAndSrc(pydantic.BaseModel):
+    nodes: list[Dict]
+    source_id: str | None = None
+
+class RAGUpsertResult(pydantic.BaseModel):
+    ingested: int
+
+
+class RAGSearchResult(pydantic.BaseModel):
+    contexts: list[str]
+    sources: list[str]
+
+class RAGQueryResult(pydantic.BaseModel):
+    answer: str
+    sources: list[str]
+    num_contexts: int
