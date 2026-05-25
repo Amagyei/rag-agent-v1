@@ -1,5 +1,5 @@
 import pydantic
-from typing import Dict
+from typing import Dict, Any
 from llama_index.core.schema import Node
 
 class RAGNodesAndSrc(pydantic.BaseModel):

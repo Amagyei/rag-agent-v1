@@ -1,6 +1,6 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
-
+from typing import Any
 from data_loader import EMBED_DIM
 
 
@@ -39,12 +39,12 @@ class QDrantStorage:
             Example: {"contexts": ["...", "..."], "sources": ["doc_123"]}
         """
         # Step 1: Perform similarity search to locate nearby child chunks
-        child_results = self.client.search(
+        child_results = self.client.query_points(
             collection_name=self.collection,
-            query_vector=query_vector,
+            query=query_vector,
             with_payload=True,
             limit=top_k
-        )
+        ).points
         
         contexts = []
         sources = set()

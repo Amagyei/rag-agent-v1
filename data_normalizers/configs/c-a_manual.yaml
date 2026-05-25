@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Document-Specific Normalisation Config
+# ─────────────────────────────────────────────────────────────────────────────
+# Document: Complaints & Adjudication Departmental Manual
+# Usage:    python normalise_nodes.py --config configs/c-a_manual.yaml \
+#                                     --input data.json --output clean.json
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Structural header block patterns (document-specific) ─────────────────────
+# These regex patterns are applied first (Phase 0) to strip repeating
+# page header/footer blocks as a unit.  Order matters: they run top-to-bottom.
+header_patterns:
+  # Main header block: title line through department/page reference
+  - pattern: >-
+      Complaints\s*&\s*Adjudication\s+Departmental\s+Manual
+      .*?
+      (?:Risk\s*&\s*Quality\s*Mgt\.?\s*Dept\.?
+      |Risk\s*&\s*Quality\s*Management\s*Department)
+      [^\n]*\n?
+    flags: [DOTALL, IGNORECASE]
+
+  # Policy/issue/date block (second half of header)
+  - pattern: >-
+      Policy\s+No\.\s+SSP/CAD-\d+\s*\n
+      (?:Issue\s+[\d.]+\s*\n)?
+      (?:[^\n]*\n){0,3}
+      (?:Risk\s*&\s*Quality\s*Mgt\.?\s*Dept\.?[^\n]*\n?)
+    flags: [IGNORECASE]
+
+# ── Orphan line patterns ─────────────────────────────────────────────────────
+# Short leftover lines after header block removal.  Matched per-line (MULTILINE).
+orphan_line_patterns:
+  - pattern: >-
+      ^\s*(?:
+      Reviewed By
+      |Date Reviewed
+      |Date Issued
+      |Issue\s+[\d.]+
+      |\d+\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{4}
+      )\s*$
+    flags: [MULTILINE, IGNORECASE]
+
+# ── Dynamic frequency scoring ───────────────────────────────────────────────
+scoring:
+  # A line must appear in at least this many nodes to be a boilerplate candidate
+  min_frequency: 10
+
+  # Composite score threshold: frequency × log(length) × context_similarity
+  # Lines at or above this threshold are removed as boilerplate.
+  #   Pure boilerplate  ("Schedule Officer" col header):  ~1.2
+  #   Borderline table  ("ACTIVITY RESPONSIBILITY REMARK"): ~0.14
+  #   Legitimate repeat (SSNIT definition):                ~0.004
+  boilerplate_score_threshold: 0.15
+
+  # Only score lines at least this long (short lines are too generic)
+  min_line_length: 15
+
+  # Pairwise context similarity sample size (for speed)
+  context_sample_size: 6
+
+# ── Node-level filters ──────────────────────────────────────────────────────
+filters:
+  # Discard a node if its cleaned text is shorter than this
+  min_clean_text_length: 80
+
+  # Discard if more than this fraction of text is dot-leader characters
+  max_dot_fraction: 0.12
+  dot_leader_min_run: 4
+
+# ── Whitelist ────────────────────────────────────────────────────────────────
+# Lines containing any of these substrings are never removed by frequency
+# scoring.  The structural regex strip is unaffected.
+whitelist:
+  - "SSNIT"
+  - "Act 766"
+  - "National Pensions Act"
+  - "Tier 1"
+  - "Tier 2"
+  - "PNDCL 247"
+  - "SLTF"
+  - "ATPP"
+
+# ── Idempotency guard ───────────────────────────────────────────────────────
+# If this string is absent from ALL nodes, the data is considered already
+# normalised and processing is skipped.
+idempotency_signal: "Document No. SSQM 28"

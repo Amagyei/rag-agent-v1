@@ -1,5 +1,6 @@
+from llama_index.core import SimpleDirectoryReader
 from llama_index.readers.file import PDFReader
-from llama_index.core.node_parser import SentenceSplitter, HierarchicalNodeParser, SentenceWindowNodeParser
+from llama_index.core.node_parser import SentenceSplitter, HierarchicalNodeParser
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.core.schema import Node
 from dotenv import load_dotenv
@@ -28,11 +29,17 @@ node_parser = HierarchicalNodeParser(
 #     window_size=3,
 # )
 
+
+### use simple directory reader to load all the pdfs###
+
+
 def load_and_create_nodes_from_pdf(path: str):
     docs = PDFReader().load_data(file=path)
     nodes = node_parser.get_nodes_from_documents(docs)
     return nodes
 
+
+### track node meta data and track what gets embedded ###
 embed_model = OllamaEmbedding(
     model_name="nomic-embed-text",
     base_url="http://localhost:11434",
@@ -43,3 +50,6 @@ def embed_nodes(nodes: list[Node]):
     for node, emb in zip(nodes, embeddings):
         node.embedding = emb
     return nodes
+
+def embed_query(query: str):
+    return embed_model.get_text_embedding(query)
