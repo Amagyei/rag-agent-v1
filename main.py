@@ -47,7 +47,8 @@ async def rag_ingest_pdf(ctx: inngest.Context):
 
         nodes = [TextNode.from_dict(n) for n in node_dicts]
 
-        vecs = embed_model(nodes)
+        nodes = embed_nodes(nodes)
+        vecs = [node.embedding for node in nodes]
         ids = [node.id_ for node in nodes]
         payloads = []
         for node in nodes:
@@ -58,7 +59,9 @@ async def rag_ingest_pdf(ctx: inngest.Context):
             payloads.append({
                 "source": source_id,
                 "text": node.text,
-                "parent_id": parent_id
+                "parent_id": parent_id,
+                "element_type": node.metadata.get("element_type", "prose"),
+                "section": node.metadata.get("section", ""),
             })
 
         QDrantStorage().upsert(ids, vecs, payloads)
