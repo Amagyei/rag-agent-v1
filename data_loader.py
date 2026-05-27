@@ -9,6 +9,7 @@ Fixes applied vs previous version:
   - Diagram node is only created when description is non-empty
 """
 
+from PIL import ImageColor
 import os
 import io
 os.environ["DOCLING_DEVICE"] = "cpu"
@@ -119,7 +120,7 @@ def _make_structural_node(text: str, metadata: dict) -> TextNode:
 # ─────────────────────────────────────────────
 # DOCLING LOADER
 # ─────────────────────────────────────────────
-
+image_count= 0
 def load_pdf_docling(path: str):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_picture_images = True
@@ -142,24 +143,21 @@ def load_pdf_docling(path: str):
 
         # ── PictureItem: describe with vision LLM ─────────────────────────────
         if isinstance(element, PictureItem):
-            # pil_image = element.get_image(doc)
-            # if pil_image is not None:
-            #     description = _describe_image(pil_image, page_context=current_heading)
-            #     # Only create a node if description is non-empty
-            #     # (empty = image was too small / skipped)
-            #     if description:
-            #         structural_nodes.append(_make_structural_node(
-            #             text=f"[Diagram — {current_heading}]\n{description}",
-            #             metadata={
-            #                 "element_type": "diagram",
-            #                 "section":      current_heading,
-            #                 "source_file":  os.path.basename(path),
-            #                 "source_type":  "vision_description",
-            #             }
-            #         ))
+            pil_image = element.get_image(doc)
+            if pil_image is not None:
+                description = _describe_image(pil_image, page_context=current_heading)
+                
+                if description:
+                    structural_nodes.append(_make_structural_node(
+                        text=f"[Diagram — {current_heading}]\n{description}",
+                        metadata={
+                            "element_type": "diagram",
+                            "section":      current_heading,
+                            "source_file":  os.path.basename(path),
+                            "source_type":  "vision_description",
+                        }
+                    ))
             # continue
-            image_count= 0
-            print(f"image found and skipped ", image_count)
             continue
 
         # ── All other items: export_to_markdown(doc) ──────────────────────────
@@ -208,7 +206,7 @@ def load_pdf_docling(path: str):
     all_nodes = structural_nodes + prose_nodes
     print(
         f"[data_loader] Docling produced {len(all_nodes)} nodes "
-        f"({len(structural_nodes)} structural + {len(prose_nodes)} prose)"
+        f"({len(structural_nodes)} structural + {len(prose_nodes)} prose + {image_count} images)"
     )
     return all_nodes
 
